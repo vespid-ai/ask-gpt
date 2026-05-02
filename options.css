@@ -1,0 +1,248 @@
+:root {
+  color-scheme: light;
+  --ink: #17181d;
+  --muted: #626772;
+  --line: #ded7cb;
+  --paper: #f7f4ee;
+  --panel: #fffdfa;
+  --accent: #0f6f68;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  min-height: 100vh;
+  margin: 0;
+  background:
+    radial-gradient(circle at top left, rgba(15, 111, 104, 0.13), transparent 28rem),
+    linear-gradient(180deg, #fffdf9, var(--paper));
+  color: var(--ink);
+  font-family: Avenir Next, Charter, Georgia, ui-serif, serif;
+}
+
+.settings {
+  width: min(720px, calc(100vw - 32px));
+  margin: 40px auto;
+  padding: 28px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: rgba(255, 253, 250, 0.92);
+  box-shadow: 0 24px 80px rgba(39, 31, 21, 0.12);
+}
+
+header {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  margin-bottom: 26px;
+}
+
+.mark {
+  display: grid;
+  place-items: center;
+  width: 42px;
+  height: 42px;
+  border-radius: 999px;
+  background: var(--ink);
+  color: white;
+  font: 22px/1 Menlo, Consolas, monospace;
+}
+
+h1,
+p {
+  margin: 0;
+}
+
+h1 {
+  font-size: 22px;
+  letter-spacing: 0;
+}
+
+header p {
+  margin-top: 6px;
+  color: var(--muted);
+  font-size: 14px;
+}
+
+form {
+  display: grid;
+  gap: 17px;
+}
+
+fieldset {
+  margin: 0;
+  padding: 14px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+}
+
+legend {
+  padding: 0 6px;
+  color: #34363d;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.auth-mode {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.auth-mode label,
+.oauth-box {
+  display: flex;
+  align-items: center;
+}
+
+.auth-mode label {
+  gap: 7px;
+  color: var(--muted);
+}
+
+.oauth-box {
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 14px;
+  border: 1px solid rgba(15, 111, 104, 0.24);
+  border-radius: 8px;
+  background: #eef8f5;
+}
+
+.oauth-copy {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.oauth-box strong,
+.oauth-box p {
+  display: block;
+}
+
+.oauth-box p {
+  margin-top: 5px;
+  color: var(--muted);
+  font-size: 13px;
+}
+
+.oauth-actions {
+  display: flex;
+  gap: 8px;
+  flex: 0 0 auto;
+}
+
+.device-code-panel {
+  display: grid;
+  gap: 9px;
+  margin-top: 12px;
+  padding: 13px;
+  border: 1px solid rgba(15, 111, 104, 0.35);
+  border-radius: 8px;
+  background: #fffdfa;
+}
+
+.device-code-panel[hidden] {
+  display: none;
+}
+
+.device-code-panel span {
+  color: var(--muted);
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.device-code-panel code {
+  display: block;
+  width: max-content;
+  max-width: 100%;
+  padding: 8px 12px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: #17181d;
+  color: #fff;
+  font: 800 26px/1.1 Menlo, Consolas, monospace;
+  letter-spacing: 3px;
+  overflow-wrap: anywhere;
+}
+
+.device-code-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+label span {
+  display: block;
+  margin-bottom: 7px;
+  color: #34363d;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+input[type="text"],
+input[type="password"],
+input[type="url"] {
+  width: 100%;
+  min-height: 42px;
+  padding: 0 12px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: #fff;
+  color: var(--ink);
+  font: 14px/1.2 Menlo, Consolas, monospace;
+  outline: none;
+}
+
+input:focus {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px rgba(15, 111, 104, 0.13);
+}
+
+.checks {
+  display: grid;
+  gap: 10px;
+  padding: 14px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: #fff8ed;
+}
+
+.checks label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--muted);
+  font-size: 14px;
+}
+
+.actions {
+  display: flex;
+  gap: 10px;
+}
+
+button {
+  min-height: 38px;
+  padding: 0 15px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: #fff;
+  color: var(--ink);
+  cursor: pointer;
+  font: 700 14px/1 Avenir Next, Charter, Georgia, ui-serif, serif;
+}
+
+button[type="submit"] {
+  border-color: var(--accent);
+  background: var(--accent);
+  color: white;
+}
+
+#status {
+  min-height: 20px;
+  margin-top: 16px;
+  color: var(--muted);
+  font-size: 14px;
+}

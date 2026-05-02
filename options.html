@@ -1,0 +1,82 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Ask GPT 设置</title>
+    <link rel="stylesheet" href="options.css" />
+  </head>
+  <body>
+    <main class="settings">
+      <header>
+        <div class="mark">◎</div>
+        <div>
+          <h1>Ask GPT for Chrome</h1>
+          <p>默认使用 ChatGPT OAuth，也保留 OpenAI API Key 备用。凭据只保存在本机 Chrome 扩展存储里。</p>
+        </div>
+      </header>
+
+      <form id="settingsForm">
+        <fieldset class="auth-mode">
+          <legend>登录方式</legend>
+          <label><input name="authMode" value="chatgpt-oauth" type="radio" /> ChatGPT OAuth</label>
+          <label><input name="authMode" value="api-key" type="radio" /> OpenAI API Key</label>
+        </fieldset>
+
+        <section class="oauth-box">
+          <div class="oauth-copy">
+            <strong id="oauthStatus">未登录</strong>
+            <p id="oauthDetail">使用 ChatGPT Pro 账号登录，走 Codex 同款 device-code OAuth。</p>
+            <div id="deviceCodePanel" class="device-code-panel" hidden>
+              <span>在 OpenAI 授权页输入这个 9 位代码</span>
+              <code id="deviceCodeValue"></code>
+              <div class="device-code-actions">
+                <button id="copyDeviceCode" type="button">复制代码</button>
+                <button id="openDevicePage" type="button">打开授权页</button>
+              </div>
+            </div>
+          </div>
+          <div class="oauth-actions">
+            <button id="loginChatGPT" type="button">获取登录码</button>
+            <button id="logoutChatGPT" type="button">登出</button>
+          </div>
+        </section>
+
+        <label>
+          <span>OpenAI API Key</span>
+          <input id="apiKey" type="password" autocomplete="off" placeholder="sk-..." />
+        </label>
+
+        <label>
+          <span>API Key 模型</span>
+          <input id="model" type="text" placeholder="gpt-4.1-mini" />
+        </label>
+
+        <label>
+          <span>ChatGPT OAuth 模型</span>
+          <input id="codexModel" type="text" placeholder="gpt-5.4-mini" />
+        </label>
+
+        <label>
+          <span>Responses API 地址</span>
+          <input id="endpoint" type="url" placeholder="https://api.openai.com/v1/responses" />
+        </label>
+
+        <div class="checks">
+          <label><input id="includePage" type="checkbox" /> 默认带入页面正文</label>
+          <label><input id="includeSelection" type="checkbox" /> 默认带入选中文本</label>
+          <label><input id="showFloatingButton" type="checkbox" /> 在页面右下角显示“问问 ChatGPT”</label>
+        </div>
+
+        <div class="actions">
+          <button type="submit">保存</button>
+          <button id="testConnection" type="button">测试连接</button>
+        </div>
+      </form>
+
+      <p id="status" role="status"></p>
+    </main>
+    <script src="auth.js"></script>
+    <script src="options.js"></script>
+  </body>
+</html>

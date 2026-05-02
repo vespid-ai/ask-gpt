@@ -1,0 +1,16 @@
+.DS_Store
+*.log
+
+# Local browser profiles and extension artifacts
+.chromium-profile/
+dist/
+build/
+*.crx
+*.pem
+
+# Dependency folders, if tooling is added later
+node_modules/
+
+# Environment and secret files
+.env
+.env.*

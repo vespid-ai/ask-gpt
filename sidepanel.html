@@ -1,0 +1,58 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>问问 ChatGPT</title>
+    <link rel="stylesheet" href="sidepanel.css" />
+  </head>
+  <body>
+    <main class="shell">
+      <header class="topbar">
+        <div class="brand">
+          <div class="brand-mark" aria-hidden="true">◎</div>
+          <div>
+            <h1>问问 ChatGPT</h1>
+            <p id="pageStatus">正在读取当前页面...</p>
+          </div>
+        </div>
+        <div class="top-actions">
+          <button id="refreshContext" class="icon-button" title="重新读取页面" aria-label="重新读取页面">↻</button>
+          <button id="openOptions" class="icon-button" title="设置" aria-label="设置">⚙</button>
+        </div>
+      </header>
+
+      <section class="context-strip" aria-label="当前页面上下文">
+        <div class="context-main">
+          <strong id="pageTitle">当前页面</strong>
+          <span id="pageUrl"></span>
+        </div>
+        <div class="context-toggles">
+          <label><input id="usePage" type="checkbox" checked /> 页面</label>
+          <label><input id="useSelection" type="checkbox" checked /> 选中</label>
+          <label><input id="agentMode" type="checkbox" /> Agent</label>
+        </div>
+      </section>
+
+      <section class="quick-actions" aria-label="快捷操作">
+        <button data-prompt="请总结当前页面，先给一句话结论，再列出关键事实、风险和下一步。">总结</button>
+        <button data-prompt="请解释当前页面最核心的机制，按背景、关键概念、影响三个部分说明。">解释</button>
+        <button data-prompt="请提取当前页面里的关键日期、数字、人物、组织、链接、待办和风险。">提取</button>
+        <button data-prompt="请基于当前页面内容起草一段专业、简洁、可以直接发送的回复。">起草</button>
+      </section>
+
+      <section id="messages" class="messages" aria-live="polite"></section>
+
+      <form id="composer" class="composer">
+        <textarea id="prompt" rows="3" placeholder="问当前页面、选中文本，或让 Agent 帮你执行一个受限动作..."></textarea>
+        <div class="composer-row">
+          <button id="micButton" class="icon-button" type="button" title="语音输入" aria-label="语音输入">◉</button>
+          <button id="clearChat" class="text-button" type="button">清空</button>
+          <button id="sendButton" class="send-button" type="submit">发送</button>
+        </div>
+      </form>
+    </main>
+    <script src="auth.js"></script>
+    <script src="sidepanel.js"></script>
+  </body>
+</html>
