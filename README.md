@@ -1,5 +1,8 @@
 # Ask GPT for Chrome
 
+[![Validate](https://github.com/vespid-ai/ask-gpt/actions/workflows/validate.yml/badge.svg)](https://github.com/vespid-ai/ask-gpt/actions/workflows/validate.yml)
+[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
+
 Ask GPT for Chrome is an open-source Manifest V3 extension that brings a page-aware ChatGPT side panel to Chrome. It can read the current tab context, answer questions beside the page, run quick page-analysis prompts, accept voice input, and propose guarded page actions that always require user confirmation.
 
 This project is built for people who want an Atlas-style "Ask ChatGPT about this page" workflow in regular Chrome while keeping the implementation inspectable and self-hostable.
