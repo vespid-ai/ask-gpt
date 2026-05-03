@@ -4,6 +4,15 @@ const DEFAULT_SETTINGS = {
   model: "gpt-4.1-mini",
   codexModel: "gpt-5.4-mini",
   endpoint: "https://api.openai.com/v1/responses",
+  codexNativeMode: "exec",
+  codexNativePath: "codex",
+  codexAcpCommand: "codex acp",
+  codexNativeCwd: "",
+  codexNativeModel: "",
+  codexNativeProfile: "",
+  codexNativeSandbox: "workspace-write",
+  codexNativeApproval: "never",
+  codexNativeTimeout: 900,
   includePage: true,
   includeSelection: true,
   showFloatingButton: true
@@ -168,6 +177,14 @@ async function sendPrompt(prompt) {
       return;
     }
   }
+  if (state.settings.authMode === "codex-native") {
+    const status = await AskGptCodexBridge.ping(state.settings).catch((error) => ({ ok: false, error }));
+    if (!status.ok) {
+      addMessage("system", `本机 Codex Bridge 不可用：${String(status.error?.message || status.error || "请先安装 native host。")}`);
+      chrome.runtime.openOptionsPage();
+      return;
+    }
+  }
 
   state.isSending = true;
   els.sendButton.disabled = true;
@@ -179,7 +196,7 @@ async function sendPrompt(prompt) {
     const answer = await callOpenAI(prompt);
     const { visibleText, action } = extractAction(answer);
     state.messages.push({ role: "assistant", content: visibleText || answer });
-    state.pendingAction = action;
+    await handleProposedAction(action);
   } catch (error) {
     state.messages.push({ role: "system", content: `请求失败：${String(error?.message || error)}` });
   } finally {
@@ -190,18 +207,27 @@ async function sendPrompt(prompt) {
 }
 
 async function callOpenAI(prompt) {
+  if (state.settings.authMode === "codex-native") {
+    return callNativeCodex(prompt);
+  }
   if (state.settings.authMode === "chatgpt-oauth") {
     return callCodexResponses(prompt);
   }
   return callOpenAIResponses(prompt);
 }
 
+async function callNativeCodex(prompt) {
+  const page = state.context?.page || {};
+  const contextText = buildContextText(page);
+  const nativePrompt = buildNativeCodexPrompt(prompt, contextText);
+  const response = await AskGptCodexBridge.run(nativePrompt, state.settings);
+  return String(response.text || "").trim();
+}
+
 async function callOpenAIResponses(prompt) {
   const page = state.context?.page || {};
   const contextText = buildContextText(page);
-  const agentInstruction = els.agentMode.checked
-    ? `\nAgent mode is enabled. If the user explicitly asks you to operate the page, you may propose exactly one safe action using this exact tag after your answer: <askgpt-action>{"type":"click|fill|scroll|navigate","text":"visible text","selector":"optional css selector","value":"text for fill","url":"https://example.com","direction":"down","amount":600,"reason":"why this action is needed"}</askgpt-action>. Never propose purchase, payment, login, delete, submit, or irreversible actions.`
-    : "\nAgent mode is disabled. Do not propose page actions.";
+  const agentInstruction = buildAgentInstruction();
 
   const input = [
     {
@@ -243,9 +269,7 @@ async function callCodexResponses(prompt) {
   const page = state.context?.page || {};
   const contextText = buildContextText(page);
   const accessToken = await AskGptAuth.getCodexAccessToken();
-  const instructions = `You are ChatGPT inside a Chrome side panel, matching ChatGPT Atlas' Ask ChatGPT behavior. Answer in the user's language. Use the page context when it is relevant, cite page facts as "页面中提到..." when useful, and stay concise unless asked for detail.${els.agentMode.checked
-    ? `\nAgent mode is enabled. If the user explicitly asks you to operate the page, you may propose exactly one safe action using this exact tag after your answer: <askgpt-action>{"type":"click|fill|scroll|navigate","text":"visible text","selector":"optional css selector","value":"text for fill","url":"https://example.com","direction":"down","amount":600,"reason":"why this action is needed"}</askgpt-action>. Never propose purchase, payment, login, delete, submit, or irreversible actions.`
-    : "\nAgent mode is disabled. Do not propose page actions."}`;
+  const instructions = `You are ChatGPT inside a Chrome side panel, matching ChatGPT Atlas' Ask ChatGPT behavior. Answer in the user's language. Use the page context when it is relevant, cite page facts as "页面中提到..." when useful, and stay concise unless asked for detail.${buildAgentInstruction()}`;
 
   const input = [
     ...state.messages.slice(-8).map((message) => ({
@@ -287,6 +311,33 @@ async function callCodexResponses(prompt) {
     throw new Error(body || `${response.status} ${response.statusText}`);
   }
   return readSseOutputText(response);
+}
+
+function buildAgentInstruction() {
+  if (!els.agentMode.checked) return "\nAgent mode is disabled. Do not propose page actions or local file actions.";
+  return `\nAgent mode is enabled. If the user explicitly asks you to operate the page, you may propose exactly one safe page action using this exact tag after your answer: <askgpt-action>{"type":"click|fill|scroll|navigate","text":"visible text","selector":"optional css selector","value":"text for fill","url":"https://example.com","direction":"down","amount":600,"reason":"why this action is needed"}</askgpt-action>. Never propose purchase, payment, login, delete, submit, or irreversible page actions.
+If the user explicitly asks to save, write, export, or archive your answer to Obsidian vault or a local Markdown note, append exactly one local file action using this tag after your visible answer: <askgpt-action>{"type":"save_note","title":"short note title","folder":"Ask GPT","content":"# short note title\\n\\nMarkdown content to save","reason":"why this note should be saved"}</askgpt-action>. The extension automatically reviews local file actions; keep folder relative, never use absolute paths or '..', and only include Markdown content the user asked to save.`;
+}
+
+function buildNativeCodexPrompt(prompt, contextText) {
+  const history = state.messages.slice(-8).map((message) => {
+    const label = message.role === "assistant" ? "Assistant" : "User";
+    return `${label}: ${message.content}`;
+  }).join("\n\n");
+  const bridgeMode = state.settings.codexNativeMode === "acp" ? "ACP stdio bridge" : "codex exec bridge";
+  const agentBoundary = els.agentMode.checked
+    ? `Agent mode is enabled. You are running through the local Codex ${bridgeMode}. You may use Codex's local agentic capabilities according to the configured sandbox and approval policy. Only modify local files, run commands, or access external resources when the user request requires it. If you need this Chrome extension to operate the current page, append one <askgpt-action> tag using the page-action schema. If the user asks to save to the extension-managed Obsidian vault, you may instead append one save_note <askgpt-action> tag.`
+    : "Agent mode is disabled. Answer from the supplied page context and do not intentionally modify local files or operate the page.";
+
+  return [
+    "You are ChatGPT inside an Ask GPT Chrome side panel. Answer in the user's language.",
+    "Use the current page context when it is relevant. Cite page facts as \"页面中提到...\" when useful.",
+    agentBoundary,
+    buildAgentInstruction(),
+    history ? `Recent conversation:\n${history}` : "",
+    contextText,
+    `用户问题：${prompt}`
+  ].filter(Boolean).join("\n\n");
 }
 
 async function readSseOutputText(response) {
@@ -376,12 +427,39 @@ function extractAction(answer) {
   };
 }
 
+async function handleProposedAction(action) {
+  state.pendingAction = null;
+  if (!action) return;
+  if (!els.agentMode.checked) {
+    addMessage("system", "Agent 未开启，已忽略模型返回的动作请求。");
+    return;
+  }
+  if (action.type !== "save_note") {
+    state.pendingAction = action;
+    return;
+  }
+
+  const review = AskGptVault.reviewSaveNoteAction(action);
+  if (!review.ok) {
+    addMessage("system", `Agent 保存请求未通过自动审查：${review.reason}`);
+    return;
+  }
+
+  try {
+    const result = await AskGptVault.writeMarkdownNote(action);
+    addMessage("system", formatSaveResult(result));
+  } catch (error) {
+    state.pendingAction = action;
+    addMessage("system", `保存到 Obsidian 需要授权：${String(error?.message || error)}`);
+  }
+}
+
 function renderMessages() {
   els.messages.innerHTML = "";
   if (!state.messages.length) {
     const empty = document.createElement("div");
     empty.className = "empty";
-    empty.textContent = "我会带着当前页面和选中文本来回答。打开 Agent 后，页面动作会先生成确认卡，再由你决定是否执行。";
+    empty.textContent = "我会带着当前页面和选中文本来回答。打开 Agent 后，页面动作会先生成确认卡；保存 Obsidian 笔记会先自动审查权限，再写入已授权的 vault。";
     els.messages.appendChild(empty);
   }
 
@@ -400,11 +478,12 @@ function renderActionCard(action) {
   const card = document.createElement("section");
   card.className = "action-card";
   const label = action.reason || describeAction(action);
+  const isSaveNote = action.type === "save_note";
   card.innerHTML = `
-    <strong>Agent 建议执行页面动作</strong>
+    <strong>${isSaveNote ? "Agent 请求保存 Obsidian 笔记" : "Agent 建议执行页面动作"}</strong>
     <p></p>
     <div class="action-buttons">
-      <button class="run" type="button">执行</button>
+      <button class="run" type="button">${isSaveNote ? "授权并保存" : "执行"}</button>
       <button class="dismiss" type="button">忽略</button>
     </div>
   `;
@@ -419,6 +498,14 @@ function renderActionCard(action) {
 
 async function executePendingAction(action) {
   try {
+    if (action.type === "save_note") {
+      const result = await AskGptVault.writeMarkdownNote(action, { promptIfNeeded: true });
+      addMessage("system", formatSaveResult(result));
+      state.pendingAction = null;
+      renderMessages();
+      return;
+    }
+
     const response = await chrome.runtime.sendMessage({ type: "ASK_GPT_RUN_PAGE_ACTION", action });
     if (!response?.ok) throw new Error(response?.error || "Action failed.");
     addMessage("system", response.result?.message || "页面动作已执行。");
@@ -435,11 +522,17 @@ function addMessage(role, content) {
 }
 
 function describeAction(action) {
+  if (action.type === "save_note") return `保存 Markdown 笔记：${action.title || "当前页面解释"}`;
   if (action.type === "navigate") return `打开 ${action.url}`;
   if (action.type === "click") return `点击 ${action.text || action.selector || "页面元素"}`;
   if (action.type === "fill") return `填写 ${action.text || action.selector || "输入框"}`;
   if (action.type === "scroll") return `滚动页面 ${action.direction || "down"}`;
   return "执行受限页面动作";
+}
+
+function formatSaveResult(result) {
+  const folder = result.folder ? `${result.folder}/` : "";
+  return `已保存到 ${result.vaultName}：${folder}${result.fileName}`;
 }
 
 async function toggleVoiceInput() {

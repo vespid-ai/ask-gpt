@@ -14,6 +14,8 @@ This project is built for people who want an Atlas-style "Ask ChatGPT about this
 - Quick prompts for summary, explanation, structured extraction, and reply drafting.
 - Voice input through Chrome Web Speech when the browser and operating system grant microphone access.
 - Guarded Agent mode for safe `navigate`, `click`, `fill`, and `scroll` proposals.
+- Codex Agent note saving to an authorized Obsidian vault, with automatic permission review before writing Markdown.
+- Local Codex Bridge mode through Chrome Native Messaging, with `codex exec` support today and an experimental ACP stdio command path for local agents that expose ACP.
 - Two auth paths: ChatGPT OAuth device-code login for the Codex backend, or OpenAI API Key mode for the public Responses API.
 - Local-first development with no build step.
 
@@ -43,6 +45,24 @@ Open the options page, click **获取登录码**, copy the device code, and fini
 
 Choose API Key mode in the options page, enter your key, select a model, and save. API Key mode calls the configured Responses API endpoint directly from the extension.
 
+### Obsidian Vault
+
+Open the options page and click **选择 Vault** to grant write access to your Obsidian vault directory. After that, when Agent mode is enabled, prompts such as "请解释当前页面最核心的机制，按背景、关键概念、影响三个部分说明，并保存到 Obsidian vault" can write a Markdown note into the authorized vault after the extension's automatic permission review passes.
+
+If Chrome requires permission again, the side panel shows an authorization card. The extension only writes relative Markdown paths under the selected vault; absolute paths and parent-directory traversal are rejected.
+
+### Local Codex Bridge
+
+Chrome extensions cannot start local processes or speak stdio protocols directly. To call local Codex capabilities, install the Native Messaging host after loading the extension unpacked:
+
+```bash
+scripts/install-native-host.sh <extension-id>
+```
+
+Find `<extension-id>` on `chrome://extensions`. After installing the host, open the options page, choose **本机 Codex Bridge**, and click **测试连接**. The default transport is `codex exec`, which uses the local Codex CLI and its configured tools, sandbox, model, and profile. If your local Codex build exposes an ACP stdio agent command, switch **传输模式** to **ACP stdio command** and set the ACP command, for example `codex acp`.
+
+The native host is intentionally separate from the extension. It runs as your local user and should be installed only for extension ids you trust.
+
 ## Permissions
 
 The extension requests these Chrome permissions:
@@ -52,6 +72,8 @@ The extension requests these Chrome permissions:
 - `contextMenus` for selected-text entry points.
 - `storage` for local settings and auth state.
 - `contentSettings` so the extension can request microphone access for voice input.
+- `nativeMessaging` so the extension can call the installed local Codex bridge when you choose 本机 Codex Bridge.
+- User-granted File System Access directory handles so Agent mode can save Markdown notes into the selected Obsidian vault.
 
 The extension cannot read protected Chrome pages such as `chrome://extensions`, and it cannot add first-party controls inside Chrome's native toolbar area.
 
@@ -75,11 +97,15 @@ ASK_GPT_DEBUG_PORT=9227 ./scripts/dev-chromium.sh https://example.com
 
 - `manifest.json` - Chrome MV3 permissions, side panel, context menus, and content-script wiring.
 - `auth.js` - ChatGPT OAuth device-code login, refresh, and local extension token storage.
+- `codex_bridge.js` - Extension-side Native Messaging client for the local Codex bridge.
+- `vault.js` - Obsidian vault directory authorization, automatic save-request review, and Markdown writing.
+- `native/codex_bridge.py` - Local Native Messaging host that calls `codex exec` or an ACP stdio command.
 - `background.js` - toolbar/context-menu routing and guarded page-action execution.
 - `content.js` / `content.css` - page context extraction, floating launcher, and DOM action helpers.
 - `sidepanel.*` - page-aware chat interface.
 - `options.*` - auth, model, endpoint, and UI-entry settings.
 - `scripts/validate.sh` - JSON and JavaScript syntax validation.
+- `scripts/install-native-host.sh` - Installs the Chrome Native Messaging host manifest for this unpacked extension id.
 
 ## Roadmap
 

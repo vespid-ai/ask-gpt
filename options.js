@@ -4,6 +4,15 @@ const DEFAULT_SETTINGS = {
   model: "gpt-4.1-mini",
   codexModel: "gpt-5.4-mini",
   endpoint: "https://api.openai.com/v1/responses",
+  codexNativeMode: "exec",
+  codexNativePath: "codex",
+  codexAcpCommand: "codex acp",
+  codexNativeCwd: "",
+  codexNativeModel: "",
+  codexNativeProfile: "",
+  codexNativeSandbox: "workspace-write",
+  codexNativeApproval: "never",
+  codexNativeTimeout: 900,
   includePage: true,
   includeSelection: true
 };
@@ -24,9 +33,21 @@ const els = {
   model: document.getElementById("model"),
   codexModel: document.getElementById("codexModel"),
   endpoint: document.getElementById("endpoint"),
+  codexNativeMode: document.getElementById("codexNativeMode"),
+  codexNativePath: document.getElementById("codexNativePath"),
+  codexAcpCommand: document.getElementById("codexAcpCommand"),
+  codexNativeCwd: document.getElementById("codexNativeCwd"),
+  codexNativeModel: document.getElementById("codexNativeModel"),
+  codexNativeProfile: document.getElementById("codexNativeProfile"),
+  codexNativeSandbox: document.getElementById("codexNativeSandbox"),
+  codexNativeApproval: document.getElementById("codexNativeApproval"),
+  codexNativeTimeout: document.getElementById("codexNativeTimeout"),
   includePage: document.getElementById("includePage"),
   includeSelection: document.getElementById("includeSelection"),
   showFloatingButton: document.getElementById("showFloatingButton"),
+  vaultStatus: document.getElementById("vaultStatus"),
+  selectVault: document.getElementById("selectVault"),
+  clearVault: document.getElementById("clearVault"),
   testConnection: document.getElementById("testConnection"),
   status: document.getElementById("status")
 };
@@ -52,7 +73,13 @@ els.testConnection.addEventListener("click", async () => {
       if (!/^ok$/i.test(smoke.trim())) throw new Error(`Codex responses smoke returned unexpected text: ${smoke}`);
       els.status.textContent = `连接正常：${models.length} 个模型，responses 返回 OK。`;
       return;
-    } else {
+    }
+    if (els.authMode() === "codex-native") {
+      const result = await AskGptCodexBridge.ping(readNativeSettingsFromForm());
+      els.status.textContent = `本机 Codex Bridge 正常：${result.version || "codex 可用"}`;
+      return;
+    }
+    {
       const response = await fetch(els.endpoint.value.trim(), {
         method: "POST",
         headers: {
@@ -121,6 +148,24 @@ els.openDevicePage.addEventListener("click", () => {
   chrome.tabs.create({ url: currentVerificationUrl, active: true });
 });
 
+els.selectVault.addEventListener("click", async () => {
+  els.status.textContent = "正在请求 Obsidian vault 目录授权...";
+  try {
+    await AskGptVault.pickVault();
+    await renderVaultStatus();
+    els.status.textContent = "已保存 Obsidian vault 授权。";
+  } catch (error) {
+    els.status.textContent = `Vault 授权失败：${String(error?.message || error)}`;
+    await renderVaultStatus();
+  }
+});
+
+els.clearVault.addEventListener("click", async () => {
+  await AskGptVault.clearVault();
+  await renderVaultStatus();
+  els.status.textContent = "已清除 Obsidian vault 授权。";
+});
+
 els.logoutChatGPT.addEventListener("click", async () => {
   if (loginAbortController) loginAbortController.abort();
   await AskGptAuth.clearOAuth();
@@ -137,10 +182,20 @@ async function load() {
   els.model.value = local.model || DEFAULT_SETTINGS.model;
   els.codexModel.value = local.codexModel || DEFAULT_SETTINGS.codexModel;
   els.endpoint.value = local.endpoint || DEFAULT_SETTINGS.endpoint;
+  els.codexNativeMode.value = local.codexNativeMode || DEFAULT_SETTINGS.codexNativeMode;
+  els.codexNativePath.value = local.codexNativePath || DEFAULT_SETTINGS.codexNativePath;
+  els.codexAcpCommand.value = local.codexAcpCommand || DEFAULT_SETTINGS.codexAcpCommand;
+  els.codexNativeCwd.value = local.codexNativeCwd || DEFAULT_SETTINGS.codexNativeCwd;
+  els.codexNativeModel.value = local.codexNativeModel || DEFAULT_SETTINGS.codexNativeModel;
+  els.codexNativeProfile.value = local.codexNativeProfile || DEFAULT_SETTINGS.codexNativeProfile;
+  els.codexNativeSandbox.value = local.codexNativeSandbox || DEFAULT_SETTINGS.codexNativeSandbox;
+  els.codexNativeApproval.value = local.codexNativeApproval || DEFAULT_SETTINGS.codexNativeApproval;
+  els.codexNativeTimeout.value = local.codexNativeTimeout || DEFAULT_SETTINGS.codexNativeTimeout;
   els.includePage.checked = local.includePage !== false;
   els.includeSelection.checked = local.includeSelection !== false;
   els.showFloatingButton.checked = sync.showFloatingButton !== false;
   await renderOAuthStatus();
+  await renderVaultStatus();
 }
 
 async function save(showStatus = true) {
@@ -150,6 +205,7 @@ async function save(showStatus = true) {
     model: els.model.value.trim() || DEFAULT_SETTINGS.model,
     codexModel: els.codexModel.value.trim() || DEFAULT_SETTINGS.codexModel,
     endpoint: els.endpoint.value.trim() || DEFAULT_SETTINGS.endpoint,
+    ...readNativeSettingsFromForm(),
     includePage: els.includePage.checked,
     includeSelection: els.includeSelection.checked
   });
@@ -157,6 +213,20 @@ async function save(showStatus = true) {
     showFloatingButton: els.showFloatingButton.checked
   });
   if (showStatus) els.status.textContent = "已保存。刷新网页后悬浮按钮设置会生效。";
+}
+
+function readNativeSettingsFromForm() {
+  return {
+    codexNativeMode: els.codexNativeMode.value || DEFAULT_SETTINGS.codexNativeMode,
+    codexNativePath: els.codexNativePath.value.trim() || DEFAULT_SETTINGS.codexNativePath,
+    codexAcpCommand: els.codexAcpCommand.value.trim() || DEFAULT_SETTINGS.codexAcpCommand,
+    codexNativeCwd: els.codexNativeCwd.value.trim(),
+    codexNativeModel: els.codexNativeModel.value.trim(),
+    codexNativeProfile: els.codexNativeProfile.value.trim(),
+    codexNativeSandbox: els.codexNativeSandbox.value || DEFAULT_SETTINGS.codexNativeSandbox,
+    codexNativeApproval: els.codexNativeApproval.value || DEFAULT_SETTINGS.codexNativeApproval,
+    codexNativeTimeout: Number(els.codexNativeTimeout.value || DEFAULT_SETTINGS.codexNativeTimeout)
+  };
 }
 
 async function renderOAuthStatus() {
@@ -171,6 +241,26 @@ async function renderOAuthStatus() {
   els.oauthStatus.textContent = status.label;
   const expires = status.expiresAt ? new Date(status.expiresAt).toLocaleString() : "未知";
   els.oauthDetail.textContent = `已登录。Access token 过期时间：${expires}`;
+}
+
+async function renderVaultStatus() {
+  const status = await AskGptVault.getStatus();
+  els.selectVault.disabled = !status.supported;
+  els.clearVault.disabled = !status.supported || !status.configured;
+
+  if (!status.supported) {
+    els.vaultStatus.textContent = "当前 Chrome 环境不支持本地目录授权，无法自动保存 Obsidian 笔记。";
+    return;
+  }
+  if (!status.configured) {
+    els.vaultStatus.textContent = "未选择 vault。Agent 保存笔记前需要先授权一个本地目录。";
+    return;
+  }
+  if (status.permission === "granted") {
+    els.vaultStatus.textContent = `已选择 ${status.name}，Agent 可在自动审查通过后保存 Markdown 笔记。`;
+    return;
+  }
+  els.vaultStatus.textContent = `已选择 ${status.name}，但 Chrome 需要在下次保存时重新确认写入权限。`;
 }
 
 function showDeviceCode(userCode, verificationUrl) {

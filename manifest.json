@@ -3,8 +3,20 @@
   "name": "Ask GPT for Chrome",
   "version": "0.1.1",
   "description": "Atlas-style Ask ChatGPT side panel for Chrome with page context, quick prompts, voice input, and guarded page actions.",
+  "icons": {
+    "16": "icons/icon-16.png",
+    "32": "icons/icon-32.png",
+    "48": "icons/icon-48.png",
+    "128": "icons/icon-128.png"
+  },
   "action": {
-    "default_title": "问问 ChatGPT"
+    "default_title": "问问 ChatGPT",
+    "default_icon": {
+      "16": "icons/icon-16.png",
+      "32": "icons/icon-32.png",
+      "48": "icons/icon-48.png",
+      "128": "icons/icon-128.png"
+    }
   },
   "background": {
     "service_worker": "background.js",
@@ -23,6 +35,7 @@
     "activeTab",
     "contentSettings",
     "contextMenus",
+    "nativeMessaging",
     "sidePanel",
     "storage",
     "tabs"
@@ -37,6 +50,8 @@
     {
       "resources": [
         "auth.js",
+        "codex_bridge.js",
+        "vault.js",
         "sidepanel.css",
         "sidepanel.html",
         "sidepanel.js"

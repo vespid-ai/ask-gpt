@@ -12,7 +12,7 @@
         <div class="mark">◎</div>
         <div>
           <h1>Ask GPT for Chrome</h1>
-          <p>默认使用 ChatGPT OAuth，也保留 OpenAI API Key 备用。凭据只保存在本机 Chrome 扩展存储里。</p>
+          <p>默认使用 ChatGPT OAuth，也支持 OpenAI API Key 和本机 Codex Bridge。凭据只保存在本机 Chrome 扩展存储里。</p>
         </div>
       </header>
 
@@ -21,6 +21,7 @@
           <legend>登录方式</legend>
           <label><input name="authMode" value="chatgpt-oauth" type="radio" /> ChatGPT OAuth</label>
           <label><input name="authMode" value="api-key" type="radio" /> OpenAI API Key</label>
+          <label><input name="authMode" value="codex-native" type="radio" /> 本机 Codex Bridge</label>
         </fieldset>
 
         <section class="oauth-box">
@@ -62,11 +63,78 @@
           <input id="endpoint" type="url" placeholder="https://api.openai.com/v1/responses" />
         </label>
 
+        <section class="native-box">
+          <div class="native-copy">
+            <strong>本机 Codex Bridge</strong>
+            <p>通过 Chrome Native Messaging 调用本机 Codex。当前默认走 `codex exec`；如果本机有 ACP stdio agent，可切换到 ACP 命令。</p>
+          </div>
+          <label>
+            <span>传输模式</span>
+            <select id="codexNativeMode">
+              <option value="exec">Codex CLI exec</option>
+              <option value="acp">ACP stdio command</option>
+            </select>
+          </label>
+          <label>
+            <span>Codex 路径</span>
+            <input id="codexNativePath" type="text" placeholder="codex" />
+          </label>
+          <label>
+            <span>ACP 命令</span>
+            <input id="codexAcpCommand" type="text" placeholder="codex acp" />
+          </label>
+          <label>
+            <span>工作目录</span>
+            <input id="codexNativeCwd" type="text" placeholder="/Users/you/project" />
+          </label>
+          <label>
+            <span>Codex 模型</span>
+            <input id="codexNativeModel" type="text" placeholder="留空使用 ~/.codex/config.toml" />
+          </label>
+          <label>
+            <span>Codex Profile</span>
+            <input id="codexNativeProfile" type="text" placeholder="可选" />
+          </label>
+          <div class="native-grid">
+            <label>
+              <span>Sandbox</span>
+              <select id="codexNativeSandbox">
+                <option value="workspace-write">workspace-write</option>
+                <option value="read-only">read-only</option>
+                <option value="danger-full-access">danger-full-access</option>
+              </select>
+            </label>
+            <label>
+              <span>审批策略</span>
+              <select id="codexNativeApproval">
+                <option value="never">never</option>
+                <option value="on-request">on-request</option>
+                <option value="untrusted">untrusted</option>
+              </select>
+            </label>
+          </div>
+          <label>
+            <span>超时秒数</span>
+            <input id="codexNativeTimeout" type="number" min="30" max="3600" step="30" placeholder="900" />
+          </label>
+        </section>
+
         <div class="checks">
           <label><input id="includePage" type="checkbox" /> 默认带入页面正文</label>
           <label><input id="includeSelection" type="checkbox" /> 默认带入选中文本</label>
           <label><input id="showFloatingButton" type="checkbox" /> 在页面右下角显示“问问 ChatGPT”</label>
         </div>
+
+        <section class="vault-box">
+          <div class="vault-copy">
+            <strong>Obsidian Vault</strong>
+            <p id="vaultStatus">未选择 vault。Agent 保存笔记前需要先授权一个本地目录。</p>
+          </div>
+          <div class="vault-actions">
+            <button id="selectVault" type="button">选择 Vault</button>
+            <button id="clearVault" type="button">清除</button>
+          </div>
+        </section>
 
         <div class="actions">
           <button type="submit">保存</button>
@@ -77,6 +145,8 @@
       <p id="status" role="status"></p>
     </main>
     <script src="auth.js"></script>
+    <script src="codex_bridge.js"></script>
+    <script src="vault.js"></script>
     <script src="options.js"></script>
   </body>
 </html>

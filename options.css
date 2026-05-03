@@ -92,7 +92,8 @@ legend {
 }
 
 .auth-mode label,
-.oauth-box {
+.oauth-box,
+.vault-box {
   display: flex;
   align-items: center;
 }
@@ -102,7 +103,8 @@ legend {
   color: var(--muted);
 }
 
-.oauth-box {
+.oauth-box,
+.vault-box {
   align-items: flex-start;
   justify-content: space-between;
   gap: 16px;
@@ -117,18 +119,31 @@ legend {
   min-width: 0;
 }
 
+.vault-box {
+  background: #fffdfa;
+}
+
+.vault-copy {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
 .oauth-box strong,
-.oauth-box p {
+.oauth-box p,
+.vault-box strong,
+.vault-box p {
   display: block;
 }
 
-.oauth-box p {
+.oauth-box p,
+.vault-box p {
   margin-top: 5px;
   color: var(--muted);
   font-size: 13px;
 }
 
-.oauth-actions {
+.oauth-actions,
+.vault-actions {
   display: flex;
   gap: 8px;
   flex: 0 0 auto;
@@ -184,7 +199,9 @@ label span {
 
 input[type="text"],
 input[type="password"],
-input[type="url"] {
+input[type="url"],
+input[type="number"],
+select {
   width: 100%;
   min-height: 42px;
   padding: 0 12px;
@@ -196,9 +213,37 @@ input[type="url"] {
   outline: none;
 }
 
-input:focus {
+input:focus,
+select:focus {
   border-color: var(--accent);
   box-shadow: 0 0 0 3px rgba(15, 111, 104, 0.13);
+}
+
+.native-box {
+  display: grid;
+  gap: 13px;
+  padding: 14px;
+  border: 1px solid rgba(15, 111, 104, 0.24);
+  border-radius: 8px;
+  background: #fffdfa;
+}
+
+.native-copy strong,
+.native-copy p {
+  display: block;
+}
+
+.native-copy p {
+  margin-top: 5px;
+  color: var(--muted);
+  font-size: 13px;
+  line-height: 1.45;
+}
+
+.native-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
 }
 
 .checks {
